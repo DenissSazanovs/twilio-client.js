@@ -1,3 +1,33 @@
+1.10.2 (In Progress)
+===================
+
+Bug Fixes
+---------
+
+* Fixed an issue where certain device event handlers, when an exception is thrown, causes some connection event handlers to stop working. This causes potential side effects such as incoming ringtone not being able to stop after receiving a call.
+  ### Example
+  In the following example, `connection.on('accept')` will not trigger if `device.on('connect')` throws an error. With this fix, `connection.on('accept')` handler should now receive the event.
+
+  ```ts
+  connection.on('accept', () => {
+    console.log('This is my "accept" handler.');
+  });
+
+  device.on('connect', () => {
+    throw 'Oopps something went wrong.';
+  });
+  ```
+
+  ### Events affected
+  The following are the events affected and should be fixed with this release.
+
+  | Device Events           | Affected Connection Events  |
+  |:------------------------|:----------------------------|
+  | device.on('connect')    | connection.on('accept')     |
+  | device.on('error')      | connection.on('error')      |
+  | device.on('cancel')     | connection.on('cancel')     |
+  | device.on('disconnect') | connection.on('disconnect') |
+
 1.10.1 (In Progress)
 ===================
 
