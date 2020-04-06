@@ -14,7 +14,7 @@ Bug Fixes
   });
 
   device.on('connect', () => {
-    throw 'Oopps something went wrong.';
+    throw 'Something went wrong.';
   });
   ```
 
@@ -27,6 +27,25 @@ Bug Fixes
   | device.on('error')      | connection.on('error')      |
   | device.on('cancel')     | connection.on('cancel')     |
   | device.on('disconnect') | connection.on('disconnect') |
+
+  ### More information about NodeJS Events
+  As mentioned in our public [documentation](https://www.twilio.com/docs/voice/client/javascript/connection#handler-methods), the [Device](https://www.twilio.com/docs/voice/client/javascript/device) and [Connection](https://www.twilio.com/docs/voice/client/javascript/connection) objects are [EventEmitters](https://nodejs.org/api/events.html). This release doesn't change the default behavior of `EventEmitters`, where if one of the handlers on the *same* `EventEmitter` object throws an exception, the rest of the event handlers will not receive the event. Consider the following example.
+
+  ```ts
+  const myEmitter = new EventEmitter();
+
+  // Subscribe some event handlers
+  myEmitter.on('testevent', () => console.log('This is my handler 1'));
+  myEmitter.on('testevent', () => {
+    console.log('This is my handler 2');
+    throw 'Something went wrong';
+  });
+  myEmitter.on('testevent', () => console.log('This is my handler 3'));
+
+  // Emit an event
+  myEmitter.emit('testevent');
+  ```
+  In the above example, `testevent` has three handlers and are on the *same* EventEmitter object `myEmitter`. If one of the handlers, in this case handler number 2, throws an error, the rest of the event handlers will not receive the event. In this case, handler 3 will not receive `testevent`. This is a normal behavior on `EventEmitters` and this SDK release doesn't change that behavior.
 
 1.10.1 (In Progress)
 ===================
