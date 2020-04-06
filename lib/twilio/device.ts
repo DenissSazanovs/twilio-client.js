@@ -792,6 +792,20 @@ class Device extends EventEmitter {
   }
 
   /**
+   * Calls the emit API such that it is asynchronous.
+   * Only use this internal API if you don't want to break the execution after raising an event.
+   * This prevents the issue where events are not dispatched to all handlers when one of the handlers throws an error.
+   * For example, our connection:accept is not triggered if the handler for device:connect handler throws an error.
+   * As a side effect, we are not able to perform our internal routines such as stopping incoming sounds.
+   * See connection:accept inside _makeConnection where we call emit('connect'). This can throw an error.
+   * See connection:accept inside _onSignalingInvite. This handler won't get called if the error above is thrown.
+   * @private
+   */
+  private _asyncEmit(event: string | symbol, ...args: any[]): void {
+    setTimeout(() => this.emit(event, ...args));
+  }
+
+  /**
    * Called on window's beforeunload event if closeProtection is enabled,
    * preventing users from accidentally navigating away from an active call.
    * @param event
@@ -863,20 +877,6 @@ class Device extends EventEmitter {
   private _findConnection(callSid: string): Connection | null {
     return this.connections.find(conn => conn.parameters.CallSid === callSid
       || conn.outboundConnectionId === callSid) || null;
-  }
-
-  /**
-   * Calls the emit API such that it is asynchronous.
-   * Only use this internal API if you don't want to break the execution after raising an event.
-   * This prevents the issue where events are not dispatched to all handlers when one of the handlers throws an error.
-   * For example, our connection.on('accept') are not triggered if the handler for Device.on('connect') handler throws an error.
-   * As a side effect, we are not able to perform our internal routines such as stopping incoming sounds.
-   * See connection.once('accept') inside _makeConnection where we call emit('connect'). This can throw an error.
-   * See connection.once('accept') inside _onSignalingInvite. This handler won't get called if the error above is thrown.
-   * @private
-   */
-  private _asyncEmit(event: string | symbol, ...args: any[]): void {
-    setTimeout(() => this.emit(event, ...args));
   }
 
   /**
