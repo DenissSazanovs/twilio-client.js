@@ -866,6 +866,20 @@ class Device extends EventEmitter {
   }
 
   /**
+   * Calls the emit API such that it is asynchronous.
+   * Only use this internal API if you don't want to break the execution after raising an event.
+   * This prevents the issue where events are not dispatched to all handlers when one of the handlers throws an error.
+   * For example, our connection.on('accept') are not triggered if the handler for Device.on('connect') handler throws an error.
+   * As a side effect, we are not able to perform our internal routines such as stopping incoming sounds.
+   * See connection.once('accept') inside _makeConnection where we call emit('connect'). This can throw an error.
+   * See connection.once('accept') inside _onSignalingInvite. This handler won't get called if the error above is thrown.
+   * @private
+   */
+  private _asyncEmit(event: string | symbol, ...args: any[]): void {
+    setTimeout(() => this.emit(event, ...args));
+  }
+
+  /**
    * Create a new {@link Connection}.
    * @param twimlParams - A flat object containing key:value pairs to be sent to the TwiML app.
    * @param [options] - Options to be used to instantiate the {@link Connection}.
@@ -925,7 +939,7 @@ class Device extends EventEmitter {
         this.soundcache.get(Device.SoundName.Outgoing).play();
       }
 
-      this.emit('connect', connection);
+      this._asyncEmit('connect', connection);
     });
 
     connection.addListener('error', (error: Connection.Error) => {
@@ -936,7 +950,7 @@ class Device extends EventEmitter {
         this.audio._maybeStopPollingVolume();
       }
       this._maybeStopIncomingSound();
-      this.emit('error', error);
+      this._asyncEmit('error', error);
     });
 
     connection.once('cancel', () => {
@@ -946,7 +960,7 @@ class Device extends EventEmitter {
         this.audio._maybeStopPollingVolume();
       }
       this._maybeStopIncomingSound();
-      this.emit('cancel', connection);
+      this._asyncEmit('cancel', connection);
     });
 
     connection.once('disconnect', () => {
@@ -954,7 +968,7 @@ class Device extends EventEmitter {
         this.audio._maybeStopPollingVolume();
       }
       this._removeConnection(connection);
-      this.emit('disconnect', connection);
+      this._asyncEmit('disconnect', connection);
     });
 
     connection.once('reject', () => {
